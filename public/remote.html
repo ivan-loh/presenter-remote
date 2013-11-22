@@ -1,0 +1,82 @@
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presentation</title>
+  <link href="/css/bootstrap.min.css" rel=stylesheet>
+</head>
+<body>
+
+<div class="jumbotron text-center">
+  <h1>Controller!</h1>
+  <p>...</p>
+  <div class="row">
+
+      <a id="previous" class="btn btn-primary btn-lg" role="button">
+        <span class="glyphicon glyphicon-chevron-left"></span>
+        <span class="glyphicon glyphicon-chevron-left"></span>
+        <span class="glyphicon glyphicon-chevron-left"></span>
+      </a>
+
+      <a id="next" class="btn btn-primary btn-lg" role="button">
+        <span class="glyphicon glyphicon-chevron-right"></span>
+        <span class="glyphicon glyphicon-chevron-right"></span>
+        <span class="glyphicon glyphicon-chevron-right"></span>
+      </a>
+
+  </div>
+
+  <div class="row"><br/></div>
+
+  <div class="row">
+    <a id="reset" class="btn btn-success btn-lg" role="button">
+      <span class="glyphicon glyphicon-repeat"></span>
+    </a>
+  </div>
+
+</div>
+
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script>
+
+  function querystring(key) {
+    var re=new RegExp('(?:\\?|&)'+key+'=(.*?)(?=&|$)','gi');
+    var r=[], m;
+    while ((m=re.exec(document.location.search)) != null) r.push(m[1]);
+    return r;
+  }
+
+  var id     = querystring('id');
+  var host   = location.origin.replace(/^http/, 'ws');
+  var socket = new WebSocket(host);
+
+  socket.onopen = function onopen(event) {
+    socket.send(message('register-controller', id));
+  }
+
+  $('#next').click(function (e) {
+    e.preventDefault();
+    console.log('next');
+    socket.send(message('controller-events', 'next'));
+  });
+
+  $('#previous').click(function (e) {
+    e.preventDefault();
+    console.log('previous');
+    socket.send(message('controller-events', 'previous'));
+  });
+
+  $('#reset').click(function (e) {
+    e.preventDefault();
+    console.log('reset');
+    socket.send(message('controller-events', 'reset'));
+  });
+
+  function message(event, data) {
+    var message = { type : event, data : data };
+    return JSON.stringify(message);
+  }
+
+</script>
+</body>
+</html>

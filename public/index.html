@@ -1,0 +1,151 @@
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presenter</title>
+  <link href="/css/bootstrap.min.css" rel=stylesheet>
+</head>
+<body>
+
+    <div id="top-pad" class="jumbotron">
+      <div class="container text-center">
+       <h1>Google Presenter Remote</h1>
+       <div class="row">
+	 <p>Enter your docs id and scan code to begin</p>
+         <p>eg: docs.google.com/presentation/d/<b>1x88CBn6t1C6u5_rB1GUaUuaomhKlv94fOP0e0cv3Goo</b>/</p>
+       </div>
+      </div>
+    </div>
+    
+    <div id="code-container" class="text-center"></div>
+
+    <div id="form-container" class="container text-center">
+        <div class="row">
+            <form id="deckForm" class="form-inline" >
+               <div class="form-group">
+                    <input id="deckid" type="text" value="" class="form-control input-lg" placeholder="Docs ID">
+                </div>
+                <button type=submit class="btn btn-lg btn-success">Load</button>
+            </form>
+        </div>
+    </div>
+
+
+
+<script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.qrcode.min.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script>
+
+  // Default Initialization
+  var deckid;
+  var url;
+  $('#deckForm').submit(function (e) { e.preventDefault() });
+  $('#code-container').hide();
+
+  /**
+   * Web Socket Connection Initialization.
+   * -------------------------------------
+   **/
+  var host = location.origin.replace(/^http/, 'ws');
+  var socket = new WebSocket(host);
+
+  socket.onopen = function onopen(event) {
+    socket.send(message('register-display',''));
+  };
+
+  socket.onmessage = function onmessage(message) {
+    var data = message.data;
+    console.log('Received: ' + data);
+
+    var event = JSON.parse(data);
+    switch (event.type) {
+      case 'registered-display' :
+        registeredDisplay(event.data);
+        break;
+      case 'controller-connected' :
+        controllerConnected();
+        break;
+      case 'controller-disconnected' :
+        controllerDisconnected();
+        break;
+      case 'controller-command' :
+        controllerCommand(event.data);
+        break;
+    }
+
+  };
+
+  function registeredDisplay(data) {
+
+    url = 'http://' + window.location.host + '/remote.html?id=' + data;
+    console.log('Display registered: ' + url);
+
+    $('#code-container').qrcode(url);
+    $('#deckForm').submit(function (e) {
+      e.preventDefault();
+
+      $('#deckForm').hide();
+      $('#code-container').show();
+
+      deckid = $('#deckid').val();
+    });
+
+  }
+
+  function controllerConnected() {
+
+    $('#code-container').hide();
+    $('#top-pad').hide();
+
+    // reshow if no more
+    if ($('#deck').length > 0) {
+      $('#deck').show();
+      return;
+    }
+
+    var $window = $(window);
+
+    // Create Deck
+    var docsURL = 'https://docs.google.com/presentation/d/' + deckid + '/embed#slide=' + slideIndex;
+    console.log('Loading: ' + docsURL);
+
+    var $deck = $('<iframe id="deck" frameborder="0"></iframe>');
+    $deck.attr('src', docsURL);
+    $deck.attr('width', $window.width());
+    $deck.attr('height', $window.height());
+
+    $('body').append($deck);
+  }
+
+  function controllerDisconnected() {
+    $('#code-container').show();
+    $('#top-pad').show();
+    $('#deck').hide();
+  }
+  
+  var slideIndex = 1;
+
+  function controllerCommand(rawCommand) {
+    console.log(rawCommand);
+
+    if (rawCommand === 'next') {
+      slideIndex = slideIndex + 1;
+    } else if ( rawCommand === 'previous') {
+      slideIndex = slideIndex - 1;
+    } else if ( rawCommand === 'reset') {
+      slideIndex = 1;
+    }
+
+    var docsURL = 'https://docs.google.com/presentation/d/' + deckid + '/embed#slide=' + slideIndex;
+    console.log('Loading: ' + docsURL);
+    $('#deck').attr('src', docsURL);
+  }
+
+  function message(event, data) {
+    var message = { type : event, data : data };
+    return JSON.stringify(message);
+  }
+
+</script>
+</body>
+</html>
