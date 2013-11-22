@@ -11,6 +11,7 @@ var port            = process.env.PORT || 5000;
 app.use(express.static(__dirname + '/public'));
 var server = http.createServer(app);
 server.listen(port);
+
 console.log('http server listening on %d', port);
 
 /**
@@ -18,26 +19,25 @@ console.log('http server listening on %d', port);
  **/
 var displays = {};
 var wss      = new WebSocketServer({ server : server });
+console.log('websocket server started');
 
 wss.on('connection', function (socket) {
 
-  var id = uuid.v4();
+  var id;
   var display;
 
   socket.on('message', function (data) {
-    console.log('Received :' + data);
-    var message;
-    var event   = JSON.parse(data);
+
+    var event = JSON.parse(data);
     switch (event.type) {
 
       /**
        * Display Events
        **/
       case 'register-display' :
+	id           = uuid.v4();
 	displays[id] = socket;
-	message      = { type : 'registered-display', data : id };
-	message      = JSON.stringify(message);
-	socket.send(message);
+	socket.send(JSON.stringify({ type: 'registered-display', data: id}));
 	break;
 
       /**
@@ -45,21 +45,18 @@ wss.on('connection', function (socket) {
        **/
       case 'register-controller' :
 	 display = displays[event.data];
-	 message = { type : 'controller-connected', data : '' };
-	 message = JSON.stringify(message);
-	 if (display) display.send(message);
+	 if (display) display.send('{"type":"controller-connected"}');
 	 break;
 
       case 'controller-events' :
-	 message = { type : 'controller-command', data : event.data };
-	 message = JSON.stringify(message);
-	 if (display) display.send(message);
+	 if (display)
+	   display.send(JSON.stringify({type:'controller-command',data: event.data}));
 	 break;
     }
   });
 
   socket.on('close', function () {
-    if (displays[id]) delete displays[id];
+    if (id)      delete displays[id];
     if (display) display.send(JSON.stringify({ type: 'controller-disconnected'}));
   });
 
