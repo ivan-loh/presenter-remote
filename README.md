@@ -1,4 +1,4 @@
-# Node.js Websocket Remote app for google presentations.
+# Remote app for google presentations.
 
 A simple remote control webapp for controlling presentation slides with your phones.
 
