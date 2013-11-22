@@ -2,7 +2,7 @@
 
 A simple remote control webapp for controlling presentation slides with your phones.
 
-1. Run App
+1. Goto Web App
 2. Put your google presentation id.
 3. scan code with phone.
 4. use phone to forward slide.
